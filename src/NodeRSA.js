@@ -72,7 +72,7 @@ module.exports = (function () {
         if (Buffer.isBuffer(key) || _.isString(key)) {
             this.importKey(key, format);
         } else if (_.isObject(key)) {
-            this.generateKeyPair(key.b, key.e);
+            this.generateKeyPair(key.b, key.e, key.rng);
         }
 
         this.setOptions(options);
@@ -153,15 +153,16 @@ module.exports = (function () {
      * @param exp {int} public exponent. Default 65537.
      * @returns {NodeRSA}
      */
-    NodeRSA.prototype.generateKeyPair = function (bits, exp) {
+    NodeRSA.prototype.generateKeyPair = function (bits, exp, rng) {
         bits = bits || 2048;
         exp = exp || 65537;
+        rng = rng || crypt;
 
         if (bits % 8 !== 0) {
             throw Error('Key size must be a multiple of 8.');
         }
 
-        this.keyPair.generate(bits, exp.toString(16));
+        this.keyPair.generate(bits, exp.toString(16), rng);
         this.$cache = {};
         return this;
     };
@@ -392,6 +393,40 @@ module.exports = (function () {
         } else {
             return buffer.toString(encoding);
         }
+    };
+
+    NodeRSA.Random = function(seed){
+        if( typeof(seed) === 'string' ){
+            seed = this.hash(seed);
+        }
+    
+        this._seed = seed % 2147483647;
+        if (this._seed <= 0) this._seed += 2147483646;
+    };
+    
+    NodeRSA.Random.prototype.hash = function(s) {
+        var hash = 0, i, chr;
+        if (s.length === 0) return hash;
+        for (i = 0; i < s.length; i++) {
+            chr   = s.charCodeAt(i);
+            hash  = ((hash << 5) - hash) + chr;
+            hash |= 0; // Convert to 32bit integer
+        }
+        return hash;
+    };
+    
+    NodeRSA.Random.prototype.next = function(){
+        return this._seed = this._seed * 16807 % 2147483647;
+    };
+    
+    NodeRSA.Random.prototype.randomBytes = function(size){
+        var a = [];
+        for( i = 0; i < size; i++){
+        var v = this.next();
+            a.push(Math.floor(this.next() % 256));
+        }
+    
+        return Buffer.from(a);
     };
 
     return NodeRSA;

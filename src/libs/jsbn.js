@@ -47,10 +47,10 @@ var canary = 0xdeadbeefcafe;
 var j_lm = ((canary & 0xffffff) == 0xefcafe);
 
 // (public) Constructor
-function BigInteger(a, b) {
+function BigInteger(a, b, c) {
     if (a != null) {
         if ("number" == typeof a) {
-            this.fromNumber(a, b);
+            this.fromNumber(a, b, c);
         } else if (Buffer.isBuffer(a)) {
             this.fromBuffer(a);
         } else if (b == null && "string" != typeof a) {
@@ -767,12 +767,12 @@ function bnpFromRadix(s, b) {
 }
 
 //(protected) alternate constructor
-function bnpFromNumber(a, b) {
+function bnpFromNumber(a, b, c) {
     if ("number" == typeof b) {
         // new BigInteger(int,int,RNG)
         if (a < 2) this.fromInt(1);
         else {
-            this.fromNumber(a);
+            this.fromNumber(a, c);
             if (!this.testBit(a - 1))	// force MSB set
                 this.bitwiseTo(BigInteger.ONE.shiftLeft(a - 1), op_or, this);
             if (this.isEven()) this.dAddOffset(1, 0); // force odd
@@ -783,7 +783,8 @@ function bnpFromNumber(a, b) {
         }
     } else {
         // new BigInteger(int,RNG)
-        var x = crypt.randomBytes((a >> 3) + 1)
+        //var x = crypt.randomBytes((a >> 3) + 1)
+        var x = b.randomBytes((a >> 3) + 1)
         var t = a & 7;
 
         if (t > 0)
